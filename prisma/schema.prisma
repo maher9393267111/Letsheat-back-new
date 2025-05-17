@@ -1,0 +1,320 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int              @id @default(autoincrement())
+  email              String           @unique
+  password           String
+  name               String
+  phone              String?
+  role               UserRole         @default(CUSTOMER)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  status             String           @default("active")
+  profileImage       Json?
+  verified           Boolean          @default(false)
+  verificationCode   String?
+  verificationExpiry DateTime?
+        
+  pages              Page[]
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+model BlogCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  blogs       Blog[]
+}
+
+model Blog {
+  id            Int          @id @default(autoincrement())
+  title         String
+  slug          String       @unique
+  content       String
+  excerpt       String?
+  featuredImage Json?
+  publishedAt   DateTime?
+  categoryId    Int
+  viewCount     Int          @default(0)
+  status        String       @default("draft")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  category      BlogCategory @relation(fields: [categoryId], references: [id])
+  metaTitle     String?      // For SEO
+  metaDescription String?    // For SEO meta description
+  metaKeywords  String?      // For SEO
+  ogImage       Json?        // Open Graph image for social media sharing
+  canonicalUrl  String?      // Canonical URL for SEO
+  structuredData Json?       // Structured data for SEO (JSON-LD)
+  robots        String?      // Robots meta tag content
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model Media {
+  id            Int      @id @default(autoincrement())
+  name          String
+  fileId        String   @unique // The S3 file ID
+  url           String
+  type          String   // image, video, document, etc.
+  mimeType      String?
+  size          Int?
+  originalName  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isDefaultImage Boolean @default(false)
+  inUse         Boolean  @default(false) // Track if the media is being used
+  test          Json?
+  
+  @@index([type])
+  @@index([inUse])
+}
+
+model Faq {
+  id        Int      @id @default(autoincrement())
+  question  String
+  answer    String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+
+
+
+
+
+
+
+
+
+model Page {
+  id            Int      @id @default(autoincrement())
+  title         String
+  slug          String   @unique
+  description   String?  // Meta description for SEO
+  status        String   @default("draft") // draft, published
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  authorId      Int
+  author        User     @relation(fields: [authorId], references: [id])
+  blocks        Block[]  // Relation to blocks
+  metaTitle     String?  // For SEO
+  metaKeywords  String?  // For SEO
+  ogImage       Json?    // Open Graph image for social media sharing
+  featuredImage Json?    // Featured image for the page
+  isMainPage    Boolean  @default(false) // Flag to indicate if this is the main page
+  canonicalUrl  String?  // Canonical URL for SEO
+  structuredData Json?   // Structured data for SEO (JSON-LD)
+  robots        String?  // Robots meta tag content (e.g., "index, follow", "noindex")
+
+  @@index([slug])
+  @@index([status])
+  @@index([isMainPage]) // Index for faster main page lookups
+}
+
+model Block {
+  id         Int      @id @default(autoincrement())
+  type       String
+  title      String?
+  content    Json
+  orderIndex Int
+  status     String   @default("active")
+  pageId     Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  page       Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+}
+
+model BlockTemplate {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  type      String
+  content   Json
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  SERVICE_PROVIDER
+  CUSTOMER
+}
+
+enum JobStatus {
+  NEW
+  INTERESTED
+  COMPLETED
+  CANCELLED
+  INACTIVE
+}
+
+model SiteSettings {
+  id              Int      @id @default(autoincrement())
+  title           String
+  description     String?
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String?
+  ogImage         Json?
+  logo            Json?
+  footerLogo      Json?
+  primaryColor    String   @default("#2563eb")
+  footerText      String?
+  footerLinks     Json?
+  socialLinks     Json?
+  scripts         Json?
+  navTitles       Json?
+  linksInfo       Json?    // New field for advanced navigation structure
+  contactSection  Json?    // New field for contact details: phones, emails, map, admin email
+  blogSection     Json?    // New field for blog hero settings - heroImage, heroTitle
+
+  // New SEO fields for static pages
+  blogMetaTitle         String?
+  blogMetaDescription   String?
+  blogMetaKeywords      String?
+  contactMetaTitle      String?
+  contactMetaDescription String?
+  contactMetaKeywords   String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Form {
+  id              Int              @id @default(autoincrement())
+  title           String
+  slug            String           @unique
+  description     String?
+  status          String           @default("draft") // draft, published
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  authorId        Int
+  // author          User             @relation(fields: [authorId], references: [id])
+  fields          FormField[]
+  submissions     FormSubmission[]
+  
+  @@index([status])
+  @@index([slug])
+}
+
+model FormField {
+  id              Int                @id @default(autoincrement())
+  formId          Int
+  form            Form               @relation(fields: [formId], references: [id], onDelete: Cascade)
+  type            String            // text, email, number, select, checkbox, radio, file, etc.
+  label           String
+  placeholder     String?
+  isRequired      Boolean           @default(false)
+  orderIndex      Int
+  note            String?
+  options         FormFieldOption[]
+  nextQuestionId  Int?              // For conditional logic
+  isExpired       Boolean           @default(false)  // For file fields
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@index([formId])
+  @@index([type])
+}
+
+model FormFieldOption {
+  id              Int                @id @default(autoincrement())
+  fieldId         Int
+  field           FormField          @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  label           String
+  value           String?
+  image           Json?              // Store uploaded image
+  nextQuestionId  Int?              // Next question to display if this option is selected
+  isEnd           Boolean?           @default(false)
+  orderIndex      Int
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@index([fieldId])
+}
+
+model FormSubmission {
+  id              Int                @id @default(autoincrement())
+  formId          Int
+  form            Form               @relation(fields: [formId], references: [id], onDelete: Cascade)
+  data            Json              // Submitted form data
+  status          String            @default("new") // new, processed, closed
+  notes           Json?             // Notes with content and timestamp
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@index([formId])
+  @@index([status])
+}
+
+model PageView {
+  id        Int      @id @default(autoincrement())
+  path      String   // The path of the page viewed, e.g., /about, /blog/my-post
+  timestamp DateTime @default(now()) // When the page was viewed
+
+  // Optional fields you might consider adding later:
+  // ipAddress String?   // Hashed IP address for privacy-conscious unique visitor estimation
+  // userAgent String?   // User agent string
+  // userId    Int?      // If the user is logged in
+  // user      User?     @relation(fields: [userId], references: [id])
+  // pageId    Int?      // Link to a specific Page model if applicable
+  // page      Page?     @relation(fields: [pageId], references: [id])
+
+  @@index([path])
+  @@index([timestamp])
+}
+
+model PageActivity {
+  id        Int      @id @default(autoincrement())
+  pageId    Int?
+  pageName  String
+  action    String   // "created", "updated", "deleted"
+  timestamp DateTime @default(now())
+  // userId    Int?
+  // user      User?    @relation(fields: [userId], references: [id])
+  // page      Page?    @relation(fields: [pageId], references: [id])
+
+  @@index([pageId])
+  @@index([timestamp])
+  @@index([action])
+}
+
+
+
