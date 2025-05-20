@@ -25,6 +25,10 @@ const mediaRouter = require('./routes/media');
 const seoRouter = require('./routes/seo');
 const siteSettingsRouter = require('./routes/siteSettings');
 const analyticsRouter = require('./routes/analytics');
+// Import new policy routes
+const privacyPolicyRouter = require('./routes/privacyPolicy');
+const termsAndConditionsRouter = require('./routes/termsAndConditions');
+const cookiePolicyRouter = require('./routes/cookiePolicy');
 
 
 // Import Controllers
@@ -55,6 +59,9 @@ app.use('/api', mediaRouter);
 app.use('/api', seoRouter);
 app.use('/api', siteSettingsRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api', privacyPolicyRouter);
+app.use('/api', termsAndConditionsRouter);
+app.use('/api', cookiePolicyRouter);
 
 //add main ednpiutn get hello world
 app.get("/", (req, res) => {
